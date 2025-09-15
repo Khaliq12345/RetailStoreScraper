@@ -47,7 +47,10 @@ class IgaUpdateScraper(UpdateScraperStrategy):
             (str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[1])
             or None
         )
-        image_link = f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{item_raw['propertyBag']['ProductImageFile']}".lower() or None
+        image_link = (
+            f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{item_raw['propertyBag']['ProductImageFile']}".lower()
+            or None
+        )
         item_url = item_raw["item_url"] or None
         parsed_item = ProductModel(
             Regular_Price=regular_price,

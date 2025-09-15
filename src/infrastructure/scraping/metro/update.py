@@ -30,8 +30,8 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         # size
         size_node = soup.css_first(".pi--weight")
         size = " ".join(size_node.text().split()).strip() if size_node else ""
-        size_value = size.split(" ")[0] or ''
-        size_label_value = size.split(" ")[1] or ''
+        size_value = size.split(" ")[0] or ""
+        size_label_value = size.split(" ")[1] or ""
         # Img
         img_node = soup.css_first("#mob-img")
         img = img_node.attributes.get("src", "") if img_node else ""
@@ -72,7 +72,7 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         )
         category = bread_cumb[3] if len(bread_cumb) > 3 else ""
         sub_category = bread_cumb[4] if len(bread_cumb) > 4 else ""
-        sku = item_raw["product_id"] or ''
+        sku = item_raw["product_id"] or ""
         item_url = item_raw["item_url"] or None
 
         parsed_item = ProductModel(
