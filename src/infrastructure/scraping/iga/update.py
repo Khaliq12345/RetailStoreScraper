@@ -14,44 +14,76 @@ class IgaUpdateScraper(UpdateScraperStrategy):
     ) -> None:
         super().__init__(store, store_id, environment, script)
 
+    def first_where_price(self, prices_list, type: str) -> str | None:
+        return next(
+            (x.get("price") for x in prices_list if x.get("priceListType", "") == type),
+            None,
+        )
+
     def parse_one_item(self, item_raw: Any) -> None:
-        prices_list = item_raw["prices"] or []
-        regular_price = next(
-            (x["price"] for x in prices_list if x["priceListType"] == "Regular"),
-            None,
+        propertyBag = item_raw.get("propertyBag")
+        comparison_measure = (
+            propertyBag.get("ComparisonMeasure") if propertyBag else None
         )
-        sale_price = next(
-            (x["price"] for x in prices_list if x["priceListType"] == "Discount"),
-            None,
+        comparison_measure_value = (
+            comparison_measure.get("value") if comparison_measure else None
         )
-        ppq_item_price = next(
-            (x["price"] for x in prices_list if x["priceListType"] == "Informational"),
-            None,
+        comparison_measure_value_enca = (
+            comparison_measure_value.get("en-CA") if comparison_measure_value else None
         )
-        ppq_item_unit = (
-            item_raw["propertyBag"]["ComparisonMeasure"]["value"]["en-CA"] or None
+        prices_list = item_raw.get("prices")
+        regular_price = None
+        sale_price = None
+        ppq_item = None
+        if prices_list:
+            regular_price = self.first_where_price(prices_list, "Regular")
+            sale_price = self.first_where_price(prices_list, "Discount")
+            ppq_item_price = self.first_where_price(prices_list, "Informational")
+            ppq_item_unit = comparison_measure_value_enca
+            ppq_item = (
+                f"{ppq_item_price} / {ppq_item_unit}"
+                if (ppq_item_price and ppq_item_unit)
+                else None
+            )
+        ppq = [ppq_item] if ppq_item else []
+        additional_info = (
+            propertyBag.get("AdditionalInformation") if propertyBag else None
         )
-        ppq_item = (
-            f"{ppq_item_price} / {ppq_item_unit}"
-            if (ppq_item_price and ppq_item_unit)
+        additional_info_value = (
+            additional_info.get("value") if additional_info else None
+        )
+        additional_info_value_enca = (
+            additional_info_value.get("en-CA") if additional_info_value else None
+        )
+        displayName = item_raw.get("displayName")
+        displayName_enca = displayName.get("en-CA") if displayName else None
+        name = (
+            f"{additional_info_value_enca} {displayName_enca}"
+            if (additional_info_value_enca and displayName_enca)
+            else ""
+        )
+        sku = item_raw.get("sku", "")
+        brand_name = propertyBag.get("BrandName") if propertyBag else None
+        brand_name_value = brand_name.get("value") if brand_name else None
+        brand_name_value_enca = (
+            brand_name_value.get("en-CA") if brand_name_value else None
+        )
+        brand = brand_name_value_enca
+        size_name = propertyBag.get("Size") if propertyBag else None
+        size_name_value = size_name.get("value") if size_name else None
+        size_name_value_enca = size_name_value.get("en-CA") if size_name_value else None
+        size_name_value_enca_split = (
+            size_name_value_enca.split(" ") if size_name_value_enca else []
+        )
+        size = size_name_value_enca_split[0] or None
+        size_Label = size_name_value_enca_split[1] or None
+        image_name = propertyBag.get("ProductImageFile") if propertyBag else None
+        image_link = (
+            f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{image_name}".lower()
+            if image_name
             else None
         )
-        ppq = [ppq_item] if ppq_item else []
-        name = f"{item_raw['propertyBag']['AdditionalInformation']['value']['en-CA'] or ''} {item_raw['displayName']['en-CA'] or ''}"
-        sku = item_raw["sku"] or ""
-        brand = item_raw["propertyBag"]["BrandName"]["value"]["en-CA"] or None
-        size = (
-            str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[0] or None
-        )
-        size_Label = (
-            (str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[1])
-            or None
-        )
-        image_link = (
-            f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{item_raw['propertyBag']['ProductImageFile']}".lower()
-            or None
-        )
-        item_url = item_raw["item_url"] or None
+        item_url = item_raw.get("item_url")
         parsed_item = ProductModel(
             Regular_Price=regular_price,
             Sale_Price=sale_price,

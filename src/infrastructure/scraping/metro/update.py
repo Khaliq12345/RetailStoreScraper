@@ -20,7 +20,7 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         self.headers = None
 
     def parse_one_item(self, item_raw: Any) -> None:
-        soup: HTMLParser = item_raw["soup"]
+        soup: HTMLParser = item_raw.get("soup", "")
         # brand
         brand_node = soup.css_first(".pi--brand")
         brand = " ".join(brand_node.text().split()).strip() if brand_node else ""
@@ -55,26 +55,21 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         # Price
         price_node = soup.css_first(".pricing__sale-price")
         price = " ".join(price_node.text().split()).strip() if price_node else None
+        sku = item_raw.get("product_id", "")
+        item_url = item_raw.get("item_url")
         # Breadcumb
-        bread_cumb_nodes = soup.css("ul.b--list li")
-        bread_cumb = (
-            [node.text().strip() for node in bread_cumb_nodes]
-            if bread_cumb_nodes
-            else []
-        )
-        if len(bread_cumb) > 2:
-            bread_cumb = bread_cumb[2:]
-
-        aisle = (
-            bread_cumb[2]
-            if len(bread_cumb) > 2
-            else (bread_cumb[1] if len(bread_cumb) > 1 else "")
-        )
-        category = bread_cumb[3] if len(bread_cumb) > 3 else ""
-        sub_category = bread_cumb[4] if len(bread_cumb) > 4 else ""
-        sku = item_raw["product_id"] or ""
-        item_url = item_raw["item_url"] or None
-
+        # https://www.metro.ca/en/online-grocery/aisles/meat-poultry/beef-veal/steak-cuts/cap-off-ribsteaks-value-pack/p/236063
+        bread_cumb_list = str(item_url).lower().split("aisles/") if item_url else None
+        bread_cumb_list = bread_cumb_list[1].split("p/") if bread_cumb_list else None
+        bread_cumb_list = bread_cumb_list[0].split("/") if bread_cumb_list else []
+        aisle = category = sub_category = None
+        match bread_cumb_list:
+            case [a]:
+                aisle = a if a != "" else None
+            case [a, b]:
+                aisle, category = a, b
+            case [a, b, c, *rest]:
+                aisle, category, sub_category = a, b, c
         parsed_item = ProductModel(
             Regular_Price=bf_price or price,
             Sale_Price=price,

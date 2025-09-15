@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 from test import avec_sale, sans_sale
 
 
-
 class WalmartUpdateScraper(UpdateScraperStrategy):
     def __init__(
         self, store: str, store_id: int, environment: str, script: str
@@ -16,34 +15,55 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
         super().__init__(store, store_id, environment, script)
 
     def parse_one_item(self, item_raw: Any) -> None:
-        regular_price = (item_raw["priceInfo"]["wasPrice"]["priceString"] if item_raw["priceInfo"]["wasPrice"] != "None" else None) or None
-        sale_price = (item_raw["priceInfo"]["currentPrice"]["priceString"] if item_raw["priceInfo"]["currentPrice"] != "None" else None) or None
-        ppq_item = (item_raw["priceInfo"]["unitPrice"]["priceString"] if item_raw["priceInfo"]["unitPrice"] != "None" else None) or None 
+        price_info = item_raw.get("priceInfo")
+        wasPrice = price_info.get("wasPrice") if price_info else None
+        currentPrice = price_info.get("currentPrice") if price_info else None
+        unitPrice = price_info.get("unitPrice") if price_info else None
+        regular_price = (
+            wasPrice.get("priceString") if (wasPrice and wasPrice != "None") else None
+        )
+        sale_price = (
+            currentPrice.get("priceString")
+            if (currentPrice and currentPrice != "None")
+            else None
+        )
+        ppq_item = (
+            unitPrice.get("priceString")
+            if (unitPrice and unitPrice != "None")
+            else None
+        )
         ppq = [ppq_item] if ppq_item else []
-        name = item_raw["name"] or ""
-        sku = item_raw["product_id"] or ""
-        upc = item_raw["upc"] or ""
-        brand = item_raw["brand"] or None
+        name = item_raw.get("name", "")
+        sku = item_raw.get("product_id", "")
+        upc = item_raw.get("upc")
+        brand = item_raw.get("brand")
         size = None
         size_Label = None
-        images_list = item_raw["imageInfo"]["allImages"] or []
-        image_link = images_list[0]["url"] if len(images_list) > 0 else None
-        item_url = item_raw["item_url"] or None
-        category_list = item_raw["category"]["path"] or []
-        aisle = (
-            category_list[1]["name"]
-            if len(category_list) > 1
-            else (category_list[0]["name"] if len(category_list) > 0 else "")
-        )
-        category = category_list[2]["name"] if len(category_list) > 2 else ""
-        sub_category = category_list[3]["name"] if len(category_list) > 3 else ""
+        imageInfo = item_raw.get("imageInfo")
+        images_list = imageInfo.get("allImages", [])
+        image_first = images_list[0] if len(images_list) > 0 else None
+        image_link = image_first.get("url") if image_first else None
+        item_url = item_raw.get("item_url")
+        category = item_raw.get("category")
+        category_list = category.get("path", [])
+        aisle = category_name = sub_category = None
+        match category_list:
+            case [a, b]:
+                aisle = b.get("name")
+            case [a, b, c]:
+                aisle = b.get("name")
+                category_name = c.get("name")
+            case [a, b, c, d, *rest]:
+                aisle = b.get("name")
+                category_name = c.get("name")
+                sub_category = d.get("name")
         parsed_item = ProductModel(
             Regular_Price=regular_price,
             Sale_Price=sale_price,
             Price_Per_Quantity=ppq,
             #
             Aisle=aisle,
-            Category=category,
+            Category=category_name,
             Sub_Category=sub_category,
             #
             Name=name,
@@ -90,10 +110,7 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
         product = sans_sale
         product["product_id"] = product_id
         product["item_url"] = item_url
-        try:
-            self.parse_one_item(product)
-        except Exception as e:
-            print(f"Error : {e}")
+        self.parse_one_item(product)
 
     def update_multiple_items(self):
         """Scrape multiple items"""
