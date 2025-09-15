@@ -72,7 +72,7 @@ class IgaUpdateScraper(UpdateScraperStrategy):
             Store_id=self.store_id,
             UPC=None,
         )
-        # print(parsed_item)
+        print(parsed_item)
         self.outputs.append(parsed_item)
         return
 
