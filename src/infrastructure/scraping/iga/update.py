@@ -16,41 +16,57 @@ class IgaUpdateScraper(UpdateScraperStrategy):
 
     def parse_one_item(self, item_raw: Any) -> None:
         print(item_raw)
+        prices_list = item_raw["prices"] or []
+        regular_price = next(
+            (x["price"] for x in prices_list if x["priceListType"] == "Regular"),
+            None,
+        )
+        sale_price = next(
+            (x["price"] for x in prices_list if x["priceListType"] == "Discount"),
+            None,
+        )
+        ppq_item_price = next(
+            (x["price"] for x in prices_list if x["priceListType"] == "Informational"),
+            None,
+        )
+        ppq_item_unit = (
+            item_raw["propertyBag"]["ComparisonMeasure"]["value"]["en-CA"] or None
+        )
+        ppq_item = (
+            f"{ppq_item_price} / {ppq_item_unit}"
+            if (ppq_item_price and ppq_item_unit)
+            else None
+        )
+        ppq = [ppq_item] if ppq_item else []
+        name = f"{item_raw['propertyBag']['AdditionalInformation']['value']['en-CA'] or ''} {item_raw['displayName']['en-CA'] or ''}"
+        sku = item_raw["sku"] or ""
+        brand = item_raw["propertyBag"]["BrandName"]["value"]["en-CA"] or None
+        size = (
+            str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[0] or None
+        )
+        size_Label = (
+            (str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[1])
+            or None
+        )
+        image_link = f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{item_raw['propertyBag']['ProductImageFile']}".lower() or None
+        item_url = item_raw["item_url"] or None
         parsed_item = ProductModel(
-            Regular_Price=next(
-                (
-                    x["price"]
-                    for x in item_raw["prices"]
-                    if x["priceListType"] == "Regular"
-                ),
-                None,
-            ),
-            Sale_Price=next(
-                (
-                    x["price"]
-                    for x in item_raw["prices"]
-                    if x["priceListType"] == "Discount"
-                ),
-                None,
-            ),
-            Price_Per_Quantity=[
-                f"{next((x['price'] for x in item_raw['prices'] if x['priceListType'] == 'Informational'), '')} / {item_raw['propertyBag']['ComparisonMeasure']['value']['en-CA']}"
-            ],
+            Regular_Price=regular_price,
+            Sale_Price=sale_price,
+            Price_Per_Quantity=ppq,
             #
             Aisle=None,
             Category=None,
             Sub_Category=None,
             #
-            Name=f"{item_raw['propertyBag']['AdditionalInformation']['value']['en-CA']} {item_raw['displayName']['en-CA']}",
-            Sku=item_raw["sku"],
-            Brand=item_raw["propertyBag"]["BrandName"]["value"]["en-CA"],
-            Size=str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[0],
-            Size_Label=str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(
-                " "
-            )[1],
+            Name=name,
+            Sku=sku,
+            Brand=brand,
+            Size=size,
+            Size_Label=size_Label,
             Sale_Duration=None,
-            Image=f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{item_raw['propertyBag']['ProductImageFile']}".lower(),
-            Url=item_raw["item_url"],
+            Image=image_link,
+            Url=item_url,
             Store_id=self.store_id,
             UPC=None,
         )
