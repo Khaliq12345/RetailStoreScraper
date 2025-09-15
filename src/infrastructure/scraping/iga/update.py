@@ -37,9 +37,9 @@ class IgaUpdateScraper(UpdateScraperStrategy):
                 f"{next((x['price'] for x in item_raw['prices'] if x['priceListType'] == 'Informational'), '')} / {item_raw['propertyBag']['ComparisonMeasure']['value']['en-CA']}"
             ],
             #
-            Aisle="",
-            Category="",
-            Sub_Category="",
+            Aisle=None,
+            Category=None,
+            Sub_Category=None,
             #
             Name=f"{item_raw['propertyBag']['AdditionalInformation']['value']['en-CA']} {item_raw['displayName']['en-CA']}",
             Sku=item_raw["sku"],
