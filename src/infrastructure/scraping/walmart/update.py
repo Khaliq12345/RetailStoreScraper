@@ -58,7 +58,6 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
             UPC=upc,
         )
         print(parsed_item)
-        print("end")
         self.outputs.append(parsed_item)
         return
 
