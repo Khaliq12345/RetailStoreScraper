@@ -113,8 +113,6 @@ class BaseUpdateScraper(UpdateScraperStrategy):
             f"{self.api_link}/{product_id}",
             headers=self.headers,
         )
-        print(f"response got : {response.status_code}")
-
         response.raise_for_status()
         soup = HTMLParser(response.text)
         # print(soup.css_first("title").text())
@@ -122,7 +120,6 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         product["product_id"] = product_id
         product["item_url"] = item_url
         product["soup"] = soup
-        print("going")
         self.parse_one_item(product)
 
     def update_multiple_items(self):
