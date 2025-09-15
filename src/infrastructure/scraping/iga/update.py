@@ -15,7 +15,6 @@ class IgaUpdateScraper(UpdateScraperStrategy):
         super().__init__(store, store_id, environment, script)
 
     def parse_one_item(self, item_raw: Any) -> None:
-        print(item_raw)
         prices_list = item_raw["prices"] or []
         regular_price = next(
             (x["price"] for x in prices_list if x["priceListType"] == "Regular"),
@@ -70,7 +69,7 @@ class IgaUpdateScraper(UpdateScraperStrategy):
             Store_id=self.store_id,
             UPC=None,
         )
-        print(parsed_item)
+        # print(parsed_item)
         self.outputs.append(parsed_item)
         return
 

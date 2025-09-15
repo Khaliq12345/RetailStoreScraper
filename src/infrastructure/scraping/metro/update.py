@@ -30,6 +30,8 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         # size
         size_node = soup.css_first(".pi--weight")
         size = " ".join(size_node.text().split()).strip() if size_node else ""
+        size_value = size.split(" ")[0] or ''
+        size_label_value = size.split(" ")[1] or ''
         # Img
         img_node = soup.css_first("#mob-img")
         img = img_node.attributes.get("src", "") if img_node else ""
@@ -54,36 +56,46 @@ class BaseUpdateScraper(UpdateScraperStrategy):
         price_node = soup.css_first(".pricing__sale-price")
         price = " ".join(price_node.text().split()).strip() if price_node else None
         # Breadcumb
-        br_cum_nodes = soup.css("ul.b--list li")
-        br_cum = [node.text().strip() for node in br_cum_nodes] if br_cum_nodes else []
-        if len(br_cum) > 2:
-            br_cum = br_cum[2:]
-        # b--list
-        print(f"Breadcum ;;;; {br_cum}")
+        bread_cumb_nodes = soup.css("ul.b--list li")
+        bread_cumb = (
+            [node.text().strip() for node in bread_cumb_nodes]
+            if bread_cumb_nodes
+            else []
+        )
+        if len(bread_cumb) > 2:
+            bread_cumb = bread_cumb[2:]
+
+        aisle = (
+            bread_cumb[2]
+            if len(bread_cumb) > 2
+            else (bread_cumb[1] if len(bread_cumb) > 1 else "")
+        )
+        category = bread_cumb[3] if len(bread_cumb) > 3 else ""
+        sub_category = bread_cumb[4] if len(bread_cumb) > 4 else ""
+        sku = item_raw["product_id"] or ''
+        item_url = item_raw["item_url"] or None
 
         parsed_item = ProductModel(
             Regular_Price=bf_price or price,
             Sale_Price=price,
             Price_Per_Quantity=ppq,
             #
-            Aisle=br_cum[2]
-            if len(br_cum) > 2
-            else (br_cum[1] if len(br_cum) > 1 else ""),
-            Category=br_cum[3] if len(br_cum) > 3 else "",
-            Sub_Category=br_cum[4] if len(br_cum) > 4 else "",
+            Aisle=aisle,
+            Category=category,
+            Sub_Category=sub_category,
             #
             Name=name,
-            Sku=item_raw["product_id"],
+            Sku=sku,
             Brand=brand,
-            Size=size.split(" ")[0],
-            Size_Label=size.split(" ")[1],
+            Size=size_value,
+            Size_Label=size_label_value,
             Sale_Duration=sale_until,
             Image=img,
-            Url=item_raw["item_url"],
+            Url=item_url,
             Store_id=self.store_id,
             UPC=None,
         )
-        print(parsed_item)
+        # print(parsed_item)
         self.outputs.append(parsed_item)
         return
 
