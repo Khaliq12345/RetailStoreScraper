@@ -1,0 +1,2 @@
+class IgaFullScraper:
+    pass
