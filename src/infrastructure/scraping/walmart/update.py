@@ -5,6 +5,8 @@ from src.domain.scraper_strategy import UpdateScraperStrategy
 from src.infrastructure.scraping.walmart import config
 import httpx
 from concurrent.futures import ThreadPoolExecutor
+from test import avec_sale, sans_sale
+
 
 
 class WalmartUpdateScraper(UpdateScraperStrategy):
@@ -14,46 +16,49 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
         super().__init__(store, store_id, environment, script)
 
     def parse_one_item(self, item_raw: Any) -> None:
-        print(item_raw)
+        regular_price = (item_raw["priceInfo"]["wasPrice"]["priceString"] if item_raw["priceInfo"]["wasPrice"] != "None" else None) or None
+        sale_price = (item_raw["priceInfo"]["currentPrice"]["priceString"] if item_raw["priceInfo"]["currentPrice"] != "None" else None) or None
+        ppq_item = (item_raw["priceInfo"]["unitPrice"]["priceString"] if item_raw["priceInfo"]["unitPrice"] != "None" else None) or None 
+        ppq = [ppq_item] if ppq_item else []
+        name = item_raw["name"] or ""
+        sku = item_raw["product_id"] or ""
+        upc = item_raw["upc"] or ""
+        brand = item_raw["brand"] or None
+        size = None
+        size_Label = None
+        images_list = item_raw["imageInfo"]["allImages"] or []
+        image_link = images_list[0]["url"] if len(images_list) > 0 else None
+        item_url = item_raw["item_url"] or None
+        category_list = item_raw["category"]["path"] or []
+        aisle = (
+            category_list[1]["name"]
+            if len(category_list) > 1
+            else (category_list[0]["name"] if len(category_list) > 0 else "")
+        )
+        category = category_list[2]["name"] if len(category_list) > 2 else ""
+        sub_category = category_list[3]["name"] if len(category_list) > 3 else ""
         parsed_item = ProductModel(
-            Regular_Price=next(
-                (
-                    x["price"]
-                    for x in item_raw["prices"]
-                    if x["priceListType"] == "Regular"
-                ),
-                None,
-            ),
-            Sale_Price=next(
-                (
-                    x["price"]
-                    for x in item_raw["prices"]
-                    if x["priceListType"] == "Discount"
-                ),
-                None,
-            ),
-            Price_Per_Quantity=[
-                f"{next((x['price'] for x in item_raw['prices'] if x['priceListType'] == 'Informational'), '')} / {item_raw['propertyBag']['ComparisonMeasure']['value']['en-CA']}"
-            ],
+            Regular_Price=regular_price,
+            Sale_Price=sale_price,
+            Price_Per_Quantity=ppq,
             #
-            Aisle="",
-            Category="",
-            Sub_Category="",
+            Aisle=aisle,
+            Category=category,
+            Sub_Category=sub_category,
             #
-            Name=f"{item_raw['propertyBag']['AdditionalInformation']['value']['en-CA']} {item_raw['displayName']['en-CA']}",
-            Sku=item_raw["sku"],
-            Brand=item_raw["propertyBag"]["BrandName"]["value"]["en-CA"],
-            Size=str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(" ")[0],
-            Size_Label=str(item_raw["propertyBag"]["Size"]["value"]["en-CA"]).split(
-                " "
-            )[1],
+            Name=name,
+            Sku=sku,
+            Brand=brand,
+            Size=size,
+            Size_Label=size_Label,
             Sale_Duration=None,
-            Image=f"https://sbs-prd-cdn-products.azureedge.net/media/image/product/en/medium/{item_raw['propertyBag']['ProductImageFile']}".lower(),
-            Url=item_raw["item_url"],
+            Image=image_link,
+            Url=item_url,
             Store_id=self.store_id,
-            UPC=None,
+            UPC=upc,
         )
         print(parsed_item)
+        print("end")
         self.outputs.append(parsed_item)
         return
 
@@ -75,17 +80,21 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
             json=json_data,
         )
         print(f"--Response status for item - {item_url} - {response.status_code} ")
-        response.raise_for_status()
-        json_data = response.json()
-        product = json_data["data"]["product"]
-        if not product:
-            return None
-        name = product["name"]
-        zip_code = product["location"]["postalCode"]
-        print(name, zip_code)
+        # response.raise_for_status()
+        # json_data = response.json()
+        # product = json_data["data"]["product"]
+        # if not product:
+        #     return None
+        # name = product["name"]
+        # zip_code = product["location"]["postalCode"]
+        # print(name, zip_code)
+        product = sans_sale
         product["product_id"] = product_id
         product["item_url"] = item_url
-        self.parse_one_item(product)
+        try:
+            self.parse_one_item(product)
+        except Exception as e:
+            print(f"Error : {e}")
 
     def update_multiple_items(self):
         """Scrape multiple items"""
