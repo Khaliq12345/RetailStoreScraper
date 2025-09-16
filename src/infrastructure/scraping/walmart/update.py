@@ -6,13 +6,17 @@ from src.infrastructure.scraping.walmart import config
 import httpx
 from concurrent.futures import ThreadPoolExecutor
 from test import avec_sale, sans_sale
+from typing import Any
 
 
 class WalmartUpdateScraper(UpdateScraperStrategy):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
+
+    def parse_one_item(self, item_raw: Any):
+        return super().parse_one_item(item_raw)
 
     def parse_one_item(self, item_raw: Any) -> None:
         price_info = item_raw.get("priceInfo")

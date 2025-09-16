@@ -21,7 +21,9 @@ class Orchestrator:
         """Redirect the scrape to the appropriate scraper"""
         store = self.cli.store
         store_id = StoreID[f"{store}"].value
-        flow = BaseWorkflow(store, store_id, self.cli.env, self.cli.script)
+        flow = BaseWorkflow(
+            store, store_id, self.cli.env, self.cli.script, self.cli.folder
+        )
         flow.main()
 
 

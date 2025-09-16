@@ -10,9 +10,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 class IgaUpdateScraper(UpdateScraperStrategy):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
 
     def first_where_price(self, prices_list, type: str) -> str | None:
         return next(
