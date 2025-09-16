@@ -8,11 +8,11 @@ from typing import Any
 
 class WalmartUpdateScraper(UpdateScraperStrategy):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
 
-    def parse_one_item(self, item_raw: Any) -> None:
+    def parse_one_item(self, item_raw: Any):
         return super().parse_one_item(item_raw)
 
     def start_scraping(self):
@@ -32,9 +32,7 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
             headers=config.headers,
             json=json_data,
         )
-        print(
-            f"--Response status for item - {item_url} - {response.status_code} "
-        )
+        print(f"--Response status for item - {item_url} - {response.status_code} ")
         response.raise_for_status()
         json_data = response.json()
         product = json_data["data"]["product"]
