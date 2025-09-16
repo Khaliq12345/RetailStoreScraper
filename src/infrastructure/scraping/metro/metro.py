@@ -3,6 +3,7 @@ from src.infrastructure.scraping.metro.update import (
     MetroUpdateScraper,
     SupercUpdateScraper,
 )
+from src.infrastructure.scraping.metro.full import MetroFullScraper, SupercFullScraper
 
 
 class BaseScraper:
@@ -25,18 +26,24 @@ class BaseScraper:
                 else None
             )
         elif self.script == "scrape":
-            return self.full_scraper().main() if self.full_scraper else None
+            return (
+                self.full_scraper(
+                    self.store, self.store_id, self.env, self.script
+                ).main()
+                if self.full_scraper
+                else None
+            )
 
 
 class MetroScraper(BaseScraper):
     def __init__(self, script: str, store: str, store_id: int, env: str) -> None:
         super().__init__(script, store, store_id, env)
         self.update_scraper = MetroUpdateScraper
-        self.full_scraper = None
+        self.full_scraper = MetroFullScraper
 
 
 class SupercScraper(BaseScraper):
     def __init__(self, script: str, store: str, store_id: int, env: str) -> None:
         super().__init__(script, store, store_id, env)
         self.update_scraper = SupercUpdateScraper
-        self.full_scraper = None
+        self.full_scraper = SupercFullScraper

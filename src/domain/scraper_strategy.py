@@ -1,26 +1,38 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 from src.domain.entities import ProductModel
 from src.infrastructure.config.config import Config
+from src.infrastructure.presisitence.aws_repo import AWS
 import httpx
 from func_retry import retry
 
 
 class ScraperStragegy(ABC):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
         super().__init__()
-        self.workers = 5
+        self.aws = AWS()
+        self.workers = 1
         self.store = store
         self.store_id = store_id
         self.environment = environment
         self.script = script
         self.outputs = []
+        self.lang = "en"
+        self.folder = folder
 
     def save_to_s3(self) -> None:
         """Send the output to s3 bucket"""
         print("Sending output to s3")
+        self.aws.send_items_to_s3_bucket(
+            self.outputs, f"{self.store}_{self.lang}.json", "update", self.folder
+        )
+        print("Data sent to s3")
+
+    @abstractmethod
+    def parse_one_item(self, item_raw: Any) -> Optional[ProductModel]:
+        """Parse raw item"""
         pass
 
     @abstractmethod
@@ -36,9 +48,9 @@ class ScraperStragegy(ABC):
 
 class UpdateScraperStrategy(ScraperStragegy, ABC):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
         self.login_url = "https://prodapi.eezly.app/auth/login/"
         self.merged_store_url = (
             "https://prodapi.eezly.app/stores/import/merged-store-items-urls"
@@ -56,11 +68,6 @@ class UpdateScraperStrategy(ScraperStragegy, ABC):
     @abstractmethod
     def update_multiple_items(self) -> None:
         """Iterate through all items and extract the data"""
-        pass
-
-    @abstractmethod
-    def parse_one_item(self, item_raw: Any) -> None:
-        """Parse raw item"""
         pass
 
     @retry(times=5, delay=5)
@@ -104,3 +111,11 @@ class UpdateScraperStrategy(ScraperStragegy, ABC):
                 break
             num += 1
         return self.product_links
+
+
+class FullScraperStrategy(ScraperStragegy, ABC):
+    def __init__(
+        self, store: str, store_id: int, environment: str, script: str, folder: str
+    ) -> None:
+        super().__init__(store, store_id, environment, script, folder)
+        self.config = Config()

@@ -3,6 +3,7 @@ from src.domain.scraper_strategy import UpdateScraperStrategy
 from src.infrastructure.scraping.walmart import config
 import httpx
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 
 class WalmartUpdateScraper(UpdateScraperStrategy):
@@ -10,6 +11,9 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
         self, store: str, store_id: int, environment: str, script: str
     ) -> None:
         super().__init__(store, store_id, environment, script)
+
+    def parse_one_item(self, item_raw: Any) -> None:
+        return super().parse_one_item(item_raw)
 
     def start_scraping(self):
         """Start interation through all the items"""
@@ -28,7 +32,9 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
             headers=config.headers,
             json=json_data,
         )
-        print(f"--Response status for item - {item_url} - {response.status_code} ")
+        print(
+            f"--Response status for item - {item_url} - {response.status_code} "
+        )
         response.raise_for_status()
         json_data = response.json()
         product = json_data["data"]["product"]
