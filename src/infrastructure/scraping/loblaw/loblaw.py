@@ -1,8 +1,8 @@
-from src.infrastructure.scraping.walmart.full import WalmartFullScraper
-from src.infrastructure.scraping.walmart.update import WalmartUpdateScraper
+from src.infrastructure.scraping.loblaw.full import LoblawFullScraper
+from src.infrastructure.scraping.loblaw.update import LoblawUpdateScraper
 
 
-class WalmartScraper:
+class LoblawScraper:
     def __init__(
         self, script: str, store: str, store_id: int, env: str, folder: str
     ) -> None:
@@ -15,10 +15,10 @@ class WalmartScraper:
     def main(self):
         """Route to the right strategy based on the script"""
         if self.script == "update":
-            return WalmartUpdateScraper(
+            return LoblawUpdateScraper(
                 self.store, self.store_id, self.env, self.script, self.folder
             ).main()
         elif self.script == "scrape":
-            return WalmartFullScraper(
+            return LoblawFullScraper(
                 self.store, self.store_id, self.env, self.script, self.folder
             ).main()

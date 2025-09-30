@@ -1,3 +1,4 @@
+from src.infrastructure.scraping.loblaw.loblaw import LoblawScraper
 from src.infrastructure.scraping.metro.metro import MetroScraper, SupercScraper
 from src.infrastructure.scraping.walmart.walmart import WalmartScraper
 from src.infrastructure.scraping.iga.iga import IgaScraper
@@ -19,6 +20,8 @@ class ScraperFactory:
             "iga": IgaScraper,
             "superc": SupercScraper,
             "metro": MetroScraper,
+            "maxi": LoblawScraper,
+            "provigo": LoblawScraper,
         }
 
         scraper_class = scraper_map.get(self.store)

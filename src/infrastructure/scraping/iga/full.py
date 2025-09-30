@@ -7,13 +7,17 @@ from src.domain.scraper_strategy import FullScraperStrategy
 from src.infrastructure.scraping.iga import config
 from typing import Any
 import httpx
-from concurrent.futures import ThreadPoolExecutor
 from src.domain.entities import ProductModel
 
 
 class IgaFullScraper(FullScraperStrategy):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
         self.categories = [
@@ -42,7 +46,9 @@ class IgaFullScraper(FullScraperStrategy):
         }
         for level in category_levels:
             category_level = property_bag.get(category_levels[level])
-            level_value = category_level.get("value")[0] if category_level else None
+            level_value = (
+                category_level.get("value")[0] if category_level else None
+            )
             match level:
                 case "aisle":
                     aisle = level_value
@@ -70,7 +76,9 @@ class IgaFullScraper(FullScraperStrategy):
         size_comparison_measure = property_bag.get("ComparisonMeasure")
         aisle, category, sub_category = self.parse_category(property_bag)
         url = f"https://www.iga.net/en/product/{sku}"
-        price_per_quantity = [f"{comparison_measure} / {size_comparison_measure}"]
+        price_per_quantity = [
+            f"{comparison_measure} / {size_comparison_measure}"
+        ]
         product_model = ProductModel(
             Aisle=aisle,
             Category=category,
@@ -130,3 +138,5 @@ class IgaFullScraper(FullScraperStrategy):
         print("Starting full scraping")
         for category in self.categories:
             self.scrape_one_category(category)
+
+        print(f"Total Products Scraped - {len(self.outputs)}")

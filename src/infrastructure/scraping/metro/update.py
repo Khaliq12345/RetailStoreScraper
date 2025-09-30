@@ -9,13 +9,9 @@ from typing import Any
 
 class BaseUpdateScraper(UpdateScraperStrategy):
     def __init__(
-        self,
-        store: str,
-        store_id: int,
-        environment: str,
-        script: str,
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
         self.api_link = None
         self.headers = None
 
@@ -129,17 +125,17 @@ class BaseUpdateScraper(UpdateScraperStrategy):
 
 class MetroUpdateScraper(BaseUpdateScraper):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
         self.api_link = "https://api2.metro.ca/en/online-grocery/aisles/pantry/p"
         self.headers = config.metro_headers
 
 
 class SupercUpdateScraper(BaseUpdateScraper):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str
+        self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
-        super().__init__(store, store_id, environment, script)
+        super().__init__(store, store_id, environment, script, folder)
         self.api_link = "https://api2.superc.ca/en/aisles/pantry/p"
         self.headers = config.superc_headers

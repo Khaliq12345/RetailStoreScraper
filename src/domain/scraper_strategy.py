@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 from src.domain.entities import ProductModel
 from src.infrastructure.config.config import Config
@@ -9,7 +10,12 @@ from func_retry import retry
 
 class ScraperStragegy(ABC):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__()
         self.aws = AWS()
@@ -21,13 +27,36 @@ class ScraperStragegy(ABC):
         self.outputs = []
         self.lang = "en"
         self.folder = folder
+        self.save_type = ""
+
+    def clean_output_keys(self) -> list[dict]:
+        print("Cleaning the outputs")
+        cleaned_outputs = []
+        for output in self.outputs:
+            updated_json = {
+                key.replace("_", " "): value for key, value in output.items()
+            }
+            cleaned_outputs.append(updated_json)
+        self.outputs = cleaned_outputs
+        return self.outputs
 
     def save_to_s3(self) -> None:
         """Send the output to s3 bucket"""
-        print("Sending output to s3")
-        self.aws.send_items_to_s3_bucket(
-            self.outputs, f"{self.store}_{self.lang}.json", "update", self.folder
-        )
+        print(f"Sending output to s3 using the {self.save_type} method")
+        if self.save_type == "append":
+            self.aws.append_item_to_s3_bucket(
+                self.outputs,
+                f"{self.store}_{self.lang}.json",
+                "update",
+                self.folder,
+            )
+        else:
+            self.aws.send_items_to_s3_bucket(
+                self.outputs,
+                f"{self.store}_{self.lang}.json",
+                "update",
+                self.folder,
+            )
         print("Data sent to s3")
 
     @abstractmethod
@@ -43,12 +72,18 @@ class ScraperStragegy(ABC):
     def main(self):
         """Scrape and save data to s3"""
         self.start_scraping()
+        self.clean_output_keys()
         self.save_to_s3()
 
 
 class UpdateScraperStrategy(ScraperStragegy, ABC):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
         self.login_url = "https://prodapi.eezly.app/auth/login/"
@@ -60,15 +95,18 @@ class UpdateScraperStrategy(ScraperStragegy, ABC):
         self.product_links = []
 
     @abstractmethod
-    @retry(times=5, delay=10)
     def update_one_item(self, item_url: str) -> None:
         """Parse products"""
         pass
 
-    @abstractmethod
-    def update_multiple_items(self) -> None:
-        """Iterate through all items and extract the data"""
-        pass
+    def update_multiple_items(self):
+        """Scrape multiple items"""
+        with ThreadPoolExecutor(max_workers=self.workers) as worker:
+            for item_url in self.product_links:
+                worker.submit(
+                    self.update_one_item,
+                    item_url,
+                )
 
     @retry(times=5, delay=5)
     def get_eezly_access_token(self) -> str:
@@ -107,15 +145,26 @@ class UpdateScraperStrategy(ScraperStragegy, ABC):
                 break
             for x in json_data["data"]:
                 self.product_links.append(x["url"])
-            if self.environment == "dev":
+            if self.environment == "beta":
                 break
             num += 1
         return self.product_links
 
+    def start_scraping(self):
+        """Start interation through all the items"""
+        self.get_all_product_links()
+        print(f"Total product links - {len(self.product_links)}")
+        self.update_multiple_items()
+
 
 class FullScraperStrategy(ScraperStragegy, ABC):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
         self.config = Config()

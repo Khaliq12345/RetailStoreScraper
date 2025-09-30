@@ -5,8 +5,6 @@ from src.domain.scraper_strategy import UpdateScraperStrategy
 from src.infrastructure.scraping.walmart import config
 import httpx
 from concurrent.futures import ThreadPoolExecutor
-from test import avec_sale, sans_sale
-from typing import Any
 
 
 class WalmartUpdateScraper(UpdateScraperStrategy):
@@ -14,9 +12,6 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
         self, store: str, store_id: int, environment: str, script: str, folder: str
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
-
-    def parse_one_item(self, item_raw: Any):
-        return super().parse_one_item(item_raw)
 
     def parse_one_item(self, item_raw: Any) -> None:
         price_info = item_raw.get("priceInfo")
@@ -65,11 +60,9 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
             Regular_Price=regular_price,
             Sale_Price=sale_price,
             Price_Per_Quantity=ppq,
-            #
             Aisle=aisle,
             Category=category_name,
             Sub_Category=sub_category,
-            #
             Name=name,
             Sku=sku,
             Brand=brand,
@@ -95,23 +88,17 @@ class WalmartUpdateScraper(UpdateScraperStrategy):
         """Scrape one item"""
         product_id = item_url.split("/")[-1]
         print(f"--Scraping Item - {item_url}")
-        json_data = deepcopy(config.json_data)
+        json_data = deepcopy(config.update_json_data)
         json_data["variables"]["itId"] = f"{product_id}"
         response = httpx.post(
             "https://www.walmart.ca/orchestra/pdp/graphql",
-            headers=config.headers,
+            headers=config.update_headers,
             json=json_data,
         )
         print(f"--Response status for item - {item_url} - {response.status_code} ")
-        # response.raise_for_status()
-        # json_data = response.json()
-        # product = json_data["data"]["product"]
-        # if not product:
-        #     return None
-        # name = product["name"]
-        # zip_code = product["location"]["postalCode"]
-        # print(name, zip_code)
-        product = sans_sale
+        response.raise_for_status()
+        json_data = response.json()
+        product = json_data["data"]["product"]
         product["product_id"] = product_id
         product["item_url"] = item_url
         self.parse_one_item(product)
