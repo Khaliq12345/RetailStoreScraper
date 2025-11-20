@@ -10,7 +10,12 @@ import httpx
 
 class BaseFullScraper(FullScraperStrategy):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
         self.api_link = None
@@ -141,7 +146,7 @@ class BaseFullScraper(FullScraperStrategy):
         product_json = json.loads(product_model)
         self.outputs.append(product_json)
 
-    @retry(exc=httpx.ReadTimeout, times=5, delay=10)
+    @retry(times=5, delay=10)
     def scrape_one_page(self, category: str, page: int) -> int:
         """Scrape one page"""
         response = httpx.get(
@@ -178,7 +183,12 @@ class BaseFullScraper(FullScraperStrategy):
 
 class MetroFullScraper(BaseFullScraper):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
         self.api_link = "https://api2.metro.ca/en/online-grocery/aisles"
@@ -187,7 +197,12 @@ class MetroFullScraper(BaseFullScraper):
 
 class SupercFullScraper(BaseFullScraper):
     def __init__(
-        self, store: str, store_id: int, environment: str, script: str, folder: str
+        self,
+        store: str,
+        store_id: int,
+        environment: str,
+        script: str,
+        folder: str,
     ) -> None:
         super().__init__(store, store_id, environment, script, folder)
         self.api_link = "https://api2.superc.ca/en/aisles"

@@ -107,7 +107,7 @@ class WalmartFullScraper(FullScraperStrategy):
         product_json = json.loads(product_model)
         self.outputs.append(product_json)
 
-    @retry(exc=httpx.ReadTimeout, times=5, delay=10)
+    @retry(times=5, delay=10)
     def scrape_one_page(self, params: dict) -> int:
         """Scrape one item"""
         username = ""

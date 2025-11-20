@@ -143,7 +143,7 @@ class LoblawFullScraper(FullScraperStrategy):
             num += 1
         return nodes
 
-    @retry(exc=httpx.ReadTimeout, times=5, delay=10)
+    @retry(times=5, delay=10)
     def get_category_nodes(self, category_node: str) -> List[str]:
         """Getting all nodes from one parent node"""
         params = deepcopy(config.PARAMS)
@@ -187,6 +187,7 @@ class LoblawFullScraper(FullScraperStrategy):
             url=f"https://api.pcexpress.ca/pcx-bff/api/v2/listingPage/{node_id}",
             headers=headers,
             json=params,
+            timeout=None
             # proxy=self.proxy_string("ca"),
         )
         print(f"Child node requests status: {response.status_code}")
